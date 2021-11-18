@@ -1,6 +1,6 @@
 import numpy as np
 import cv2.cv2 as cv2
-import skimagea
+import skimage
 
 
 def load_image(image_path):
