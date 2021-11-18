@@ -120,7 +120,7 @@ def speckle_noise(image, mean=0, var=0.01):
 
 def naive_edge_detect(image):
     grayscaled_image = grayscale_image(image)
-    detection_kernel = np.array([[-1, -1, -1], [-1, 7, -1], [-1, -1, -1]])
+    detection_kernel = np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]])
     manipulated_image = cv2.filter2D(grayscaled_image, -1, detection_kernel)
     return manipulated_image
 
