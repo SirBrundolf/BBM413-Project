@@ -1,21 +1,20 @@
-from tkinter.filedialog import askopenfilename, asksaveasfile
-from PIL import ImageTk, Image
 import tkinter as tk
-import customtkinter
+from tkinter.filedialog import askopenfilename, asksaveasfile
+# import customtkinter
 import cv2.cv2 as cv2
-import Functions
-import os
+from PIL import ImageTk, Image
 
+import Functions
 
 # TODO revert changes to image
 
 
-WIDTH = 1024   # TODO get those values dynamically
+WIDTH = 1024  # TODO get those values dynamically
 HEIGHT = 768
-img_loaded = None   # Will pass this to edit functions to load it using cv2, TODO no global?
+img_loaded = None  # Will pass this to edit functions to load it using cv2, TODO no global?
 
 
-def init():   # Setting up the interface
+def init():  # Setting up the interface
     root = tk.Tk()
     root.title("Epic Image Editor")
     root.resizable(width=False, height=False)
@@ -64,35 +63,37 @@ def init():   # Setting up the interface
 
     orientation_menu = tk.Menu(edit_menu, tearoff=0)
     orientation_menu.add_command(label="Crop Image",
-                               command=lambda: load_image_canvas(Functions.crop_image(img_loaded, 0, 0, 256, 256), img_mod))
+                                 command=lambda: load_image_canvas(Functions.crop_image(img_loaded, 0, 0, 256, 256), img_mod))
     orientation_menu.add_command(label="Flip Image",
-                               command=lambda: load_image_canvas(Functions.flip_image(img_loaded, 0), img_mod))
+                                 command=lambda: load_image_canvas(Functions.flip_image(img_loaded, 0), img_mod))
     orientation_menu.add_command(label="Mirror Image",
-                               command=lambda: load_image_canvas(Functions.mirror_image(img_loaded, 0), img_mod))
+                                 command=lambda: load_image_canvas(Functions.mirror_image(img_loaded, 0), img_mod))
     orientation_menu.add_command(label="Rotate Image",
-                               command=lambda: load_image_canvas(Functions.rotate_image(img_loaded, 90), img_mod))
+                                 command=lambda: load_image_canvas(Functions.rotate_image(img_loaded, 90), img_mod))
     orientation_menu.add_command(label="Reverse Image",
-                               command=lambda: load_image_canvas(Functions.reverse_image(img_loaded), img_mod))
+                                 command=lambda: load_image_canvas(Functions.reverse_image(img_loaded), img_mod))
 
     color_menu = tk.Menu(edit_menu, tearoff=0)
     color_menu.add_command(label="Grayscale",
-                               command=lambda: load_image_canvas(Functions.grayscale_image(img_loaded), img_mod))
+                           command=lambda: load_image_canvas(Functions.grayscale_image(img_loaded), img_mod))
     color_menu.add_command(label="Change Color Balance",
-                               command=lambda: load_image_canvas(Functions.change_color_balance(img_loaded, 0, 50), img_mod))
+                           command=lambda: load_image_canvas(Functions.change_color_balance(img_loaded, 0, 50), img_mod))
     color_menu.add_command(label="Change Contrast and Brightness",
-                               command=lambda: load_image_canvas(Functions.change_contrast_and_brightness(img_loaded, 1.1, 0, 0.6), img_mod))
+                           command=lambda: load_image_canvas(Functions.change_contrast_and_brightness(img_loaded, 1.1, 0, 0.6), img_mod))
 
     noise_menu = tk.Menu(edit_menu, tearoff=0)
     noise_menu.add_command(label="Gaussian Noise",
-                               command=lambda: load_image_canvas(Functions.gaussian_noise(img_loaded), img_mod))
+                           command=lambda: load_image_canvas(Functions.gaussian_noise(img_loaded), img_mod))
     noise_menu.add_command(label="Salt and Pepper Noise",
-                               command=lambda: load_image_canvas(Functions.salt_and_pepper_noise(img_loaded), img_mod))
+                           command=lambda: load_image_canvas(Functions.salt_and_pepper_noise(img_loaded), img_mod))
     noise_menu.add_command(label="Poisson Noise",
-                               command=lambda: load_image_canvas(Functions.poisson_noise(img_loaded), img_mod))
+                           command=lambda: load_image_canvas(Functions.poisson_noise(img_loaded), img_mod))
     noise_menu.add_command(label="Speckle Noise",
-                               command=lambda: load_image_canvas(Functions.speckle_noise(img_loaded), img_mod))
+                           command=lambda: load_image_canvas(Functions.speckle_noise(img_loaded), img_mod))
 
     detection_menu = tk.Menu(edit_menu, tearoff=0)
+    detection_menu.add_command(label="Naïve Edge Detection",
+                               command=lambda: load_image_canvas(Functions.naive_edge_detect(img_loaded), img_mod))
     detection_menu.add_command(label="Sobel Edge Detection",
                                command=lambda: load_image_canvas(Functions.sobel_edge_detect(img_loaded, 3, 0, 1), img_mod))
     detection_menu.add_command(label="Canny Edge Detection",
@@ -112,7 +113,7 @@ def load_image(orig, mod):
     tk.Tk().withdraw()
     filename = askopenfilename()
 
-    if filename == "":   # If choosing close instead of opening an image
+    if filename == "":  # If choosing close instead of opening an image
         return
 
     img = cv2.imread(filename)
@@ -148,7 +149,7 @@ def save_image():
 
     filename = asksaveasfile(mode='w', defaultextension=".jpg")
 
-    if filename == "":   # If choosing close instead of saving the image
+    if filename == "":  # If choosing close instead of saving the image
         return
 
     img_saved = Image.fromarray(cv2.cvtColor(img_loaded, cv2.COLOR_BGR2RGB))
