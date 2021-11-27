@@ -18,22 +18,28 @@ def save_image(save_path, image):
     return image
 
 
-def box_blur(image, kernel_size):
+def box_blur(image, args):
+    kernel_size = (args[0], args[1])
     manipulated_image = cv2.blur(image, kernel_size)
     return manipulated_image
 
 
-def gaussian_blur(image, kernel_size, sigma_x=0, sigma_y=0):
-    manipulated_image = cv2.GaussianBlur(image, kernel_size, sigma_x, sigma_y)
+def gaussian_blur(image, args):
+    kernel_size = (args[0], args[1])
+    sigma_x = args[2]
+    manipulated_image = cv2.GaussianBlur(image, kernel_size, sigma_x, 0)
     return manipulated_image
 
 
-def median_blur(image, kernel_size):
+def median_blur(image, args):
+    kernel_size = args[0]
     manipulated_image = cv2.medianBlur(image, kernel_size)
     return manipulated_image
 
 
-def bilateral_blur(image, kernel_size, sigma_color=75, sigma_space=75):
+def bilateral_blur(image, args):
+    kernel_size = args[0]
+    sigma_color, sigma_space = args[1], args[2]
     manipulated_image = cv2.bilateralFilter(image, kernel_size, sigma_color, sigma_space)
     return manipulated_image
 
@@ -44,30 +50,42 @@ def de_blur(image):
     return manipulated_image
 
 
-def grayscale_image(image):
-    manipulated_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    return manipulated_image
-
-
-def crop_image(image, x1, y1, x2, y2):
+def crop_image(image, args):
+    x1, x2, y1, y2 = args
+    if x1 > x2:
+        x1, x2 = x2, x1
+    if y1 > y2:
+        y1, y2 = y2, y1
     manipulated_image = image[y1:y2, x1:x2]
     return manipulated_image
 
 
-def flip_image(image, axis):  # Axis 0 = X, Axis 1 = Y
-    manipulated_image = cv2.flip(image, axis)
+def flip_image(image, args):  # Axis 0 = X, Axis 1 = Y
+    axis_x, axis_y = args
+    manipulated_image = np.copy(image)
+    if axis_x == 1:
+        manipulated_image = cv2.flip(manipulated_image, 0)
+    if axis_y == 1:
+        manipulated_image = cv2.flip(manipulated_image, 1)
     return manipulated_image
 
 
-def mirror_image(image, axis):  # Axis 0 = X, Axis 1 = Y
-    flipped_image = flip_image(image, axis)
-    manipulated_image = np.vstack((image, flipped_image)) if axis == 0 else np.hstack((image, flipped_image))
+def mirror_image(image, args):  # Axis 0 = X, Axis 1 = Y
+    axis_x, axis_y = args
+    manipulated_image = np.copy(image)
+    if axis_x == 1:
+        flipped_image = cv2.flip(manipulated_image, 0)
+        manipulated_image = np.vstack((manipulated_image, flipped_image))
+    if axis_y == 1:
+        flipped_image = cv2.flip(manipulated_image, 1)
+        manipulated_image = np.hstack((manipulated_image, flipped_image))
     return manipulated_image
 
 
-def rotate_image(image, degree):
-    degrees = {90: cv2.ROTATE_90_CLOCKWISE, 180: cv2.ROTATE_180, 270: cv2.ROTATE_90_COUNTERCLOCKWISE, -90: cv2.ROTATE_90_COUNTERCLOCKWISE}
-    manipulated_image = cv2.rotate(image, degrees[degree])
+def rotate_image(image, args):
+    angle, image_center_x, image_center_y = args
+    rot_mat = cv2.getRotationMatrix2D((image_center_x, image_center_y), angle, 1.0)
+    manipulated_image = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
     return manipulated_image
 
 
@@ -76,15 +94,25 @@ def reverse_image(image):
     return manipulated_image
 
 
-def change_color_balance(image, channel, amount):
+def grayscale_image(image):
     manipulated_image = np.copy(image)
-    for y in range(image.shape[0]):
-        for x in range(image.shape[1]):
-            manipulated_image[y][x][channel] = np.clip(manipulated_image[y][x][channel] + amount, 0, 255)
+    if len(image.shape) > 2:
+        manipulated_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return manipulated_image
 
 
-def change_contrast_and_brightness(image, alpha=1, beta=0, gamma=1):
+def change_color_balance(image, args):
+    channel, amount = args
+    manipulated_image = np.copy(image)
+    manipulated_image = cv2.cvtColor(manipulated_image, cv2.COLOR_BGR2RGB)
+    manipulated_image[:, :, channel] = np.clip(manipulated_image[:, :, channel] + amount, 0, 255)
+    print(manipulated_image[:, :, channel])
+    manipulated_image = cv2.cvtColor(manipulated_image, cv2.COLOR_RGB2BGR)
+    return manipulated_image
+
+
+def change_contrast_and_brightness(image, args):
+    alpha, beta, gamma = args
     look_up_table1 = np.empty((1, 256), np.uint8)
     look_up_table2 = np.empty((1, 256), np.uint8)
     for i in range(256):
@@ -94,14 +122,18 @@ def change_contrast_and_brightness(image, alpha=1, beta=0, gamma=1):
     return manipulated_image
 
 
-def gaussian_noise(image, mean=0, var=0.01):
-    noise_image = skimage.util.random_noise(image=image, mode='gaussian', mean=mean, var=var)
+def salt_and_pepper_noise(image, args):
+    salt_vs_pepper, amount = args
+    salt_vs_pepper, amount = salt_vs_pepper / 100, amount / 100
+    noise_image = skimage.util.random_noise(image=image, mode='s&p', salt_vs_pepper=salt_vs_pepper, amount=amount)
     manipulated_image = np.array(255 * noise_image, dtype='uint8')
     return manipulated_image
 
 
-def salt_and_pepper_noise(image, salt_vs_pepper=0.5, amount=0.05):
-    noise_image = skimage.util.random_noise(image=image, mode='s&p', salt_vs_pepper=salt_vs_pepper, amount=amount)
+def gaussian_noise(image, args):
+    mean, var = args
+    mean, var = mean / 100, var / 100
+    noise_image = skimage.util.random_noise(image=image, mode='gaussian', mean=mean, var=var)
     manipulated_image = np.array(255 * noise_image, dtype='uint8')
     return manipulated_image
 
@@ -112,7 +144,9 @@ def poisson_noise(image):
     return manipulated_image
 
 
-def speckle_noise(image, mean=0, var=0.01):
+def speckle_noise(image, args):
+    mean, var = args
+    mean, var = mean / 100, var / 100
     noise_image = skimage.util.random_noise(image=image, mode='speckle', mean=mean, var=var)
     manipulated_image = np.array(255 * noise_image, dtype='uint8')
     return manipulated_image
@@ -120,18 +154,20 @@ def speckle_noise(image, mean=0, var=0.01):
 
 def naive_edge_detect(image):
     grayscaled_image = grayscale_image(image)
-    detection_kernel = np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]])
+    detection_kernel = np.array([[-1, -1, -1], [-1, 7, -1], [-1, -1, -1]])
     manipulated_image = cv2.filter2D(grayscaled_image, -1, detection_kernel)
     return manipulated_image
 
 
-def sobel_edge_detect(image, kernel_size, dx=0, dy=0):
+def sobel_edge_detect(image, args):
+    kernel_size, dx, dy = args
     grayscaled_image = grayscale_image(image)
     manipulated_image = cv2.Sobel(grayscaled_image, ksize=kernel_size, dx=dx, dy=dy, ddepth=cv2.CV_8U)
     return manipulated_image
 
 
-def canny_edge_detect(image, t1=100, t2=200):
+def canny_edge_detect(image, args):
+    t1, t2 = args
     grayscaled_image = grayscale_image(image)
     manipulated_image = cv2.Canny(grayscaled_image, t1, t2)
     return manipulated_image
