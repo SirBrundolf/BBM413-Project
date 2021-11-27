@@ -219,6 +219,10 @@ class AnotherWindow(QWidget):
         self.apply_button.setGeometry(self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
         self.apply_button.pressed.connect(lambda: self.pressedOK())
 
+        self.reset_button = QPushButton('Reset', self)
+        self.reset_button.setGeometry(3 * self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
+        self.reset_button.pressed.connect(lambda: self.pressedReset())
+
         self.cancel_Button = QPushButton('Cancel', self)
         self.cancel_Button.setGeometry(5 * self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
         self.cancel_Button.pressed.connect(lambda: self.pressedCancel())
@@ -244,6 +248,12 @@ class AnotherWindow(QWidget):
         main_window.drawManipulatedImage(manipulated_image)
         main_window.updateAllActions(True)
         self.close()
+
+    def pressedReset(self):
+        for field in self.basic_fields:
+            field.updateAll(1)
+        for field in self.advanced_fields:
+            field.updateAll(self.enable_advanced_option.isChecked())
 
     def pressedCancel(self):
         main_window.updateAllActions(True)
