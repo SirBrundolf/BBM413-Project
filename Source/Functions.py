@@ -103,10 +103,11 @@ def grayscale_image(image):
 
 def change_color_balance(image, args):
     channel, amount = args
-    manipulated_image = np.copy(image)
-    manipulated_image = cv2.cvtColor(manipulated_image, cv2.COLOR_BGR2RGB)
-    manipulated_image[:, :, channel] = np.clip(manipulated_image[:, :, channel] + amount, 0, 255)
-    print(manipulated_image[:, :, channel])
+    manipulated_image = cv2.cvtColor(np.copy(image), cv2.COLOR_BGR2RGB)
+    look_up_table = np.empty((1, 256), np.uint8)
+    for i in range(256):
+        look_up_table[0][i] = np.clip(i + amount, 0, 255)
+    manipulated_image[:, :, channel] = cv2.LUT(manipulated_image[:, :, channel], look_up_table)
     manipulated_image = cv2.cvtColor(manipulated_image, cv2.COLOR_RGB2BGR)
     return manipulated_image
 
