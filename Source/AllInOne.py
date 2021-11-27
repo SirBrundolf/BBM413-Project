@@ -2,8 +2,8 @@ import sys
 import os
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QIcon, QCursor
+from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QWidget, QLabel, QSlider, QSpinBox, QCheckBox, QPushButton
 import cv2.cv2 as cv2
 import numpy as np
@@ -334,7 +334,7 @@ class MainWindow(QMainWindow):
             manipulated_image,
             [('Kernel Size X', 1, 1, 49, 2),
              ('Kernel Size Y', 1, 1, 49, 2)],
-            [('Variance', 0, 0, 10, 1)]
+            [('Variance(F)', 0, 0, 100, 1)]
         ))
         self.actions_dict['gaussian_blur_action'] = self.gaussian_blur_action
         self.median_blur_action = QAction('&Median Blur...', self)
@@ -374,8 +374,8 @@ class MainWindow(QMainWindow):
             'Flip',
             Functions.flip_image,
             manipulated_image,
-            [('Flip Horizontal', 0, 0, 1, 1),
-             ('Flip Vertical', 0, 0, 1, 1)]
+            [('Flip Horizontal(B)', 0, 0, 1, 1),
+             ('Flip Vertical(B)', 0, 0, 1, 1)]
         ))
         self.actions_dict['flip_action'] = self.flip_action
         self.mirror_action = QAction('&Mirror...', self)
@@ -383,8 +383,8 @@ class MainWindow(QMainWindow):
             'Mirror',
             Functions.mirror_image,
             manipulated_image,
-            [('Mirror Horizontal', 0, 0, 1, 1),
-             ('Mirror Vertical', 0, 0, 1, 1)]
+            [('Mirror Horizontal(B)', 0, 0, 1, 1),
+             ('Mirror Vertical(B)', 0, 0, 1, 1)]
         ))
         self.actions_dict['mirror_action'] = self.mirror_action
         self.rotate_action = QAction('&Rotate...', self)
@@ -418,9 +418,9 @@ class MainWindow(QMainWindow):
             'Change Contrast and Brightness',
             Functions.change_contrast_and_brightness,
             manipulated_image,
-            [('Alpha', 1, 0, 2, 1),
+            [('Alpha(F)', 1, 0, 2, 1),
              ('Beta', 0, -255, 255, 1)],
-            [('Gamma', 1, 0, 2, 1)]
+            [('Gamma(F)', 1, 0, 2, 1)]
         ))
         self.actions_dict['color_brightness_action'] = self.color_brightness_action
 
@@ -438,8 +438,8 @@ class MainWindow(QMainWindow):
             'Gaussian Noise',
             Functions.gaussian_noise,
             manipulated_image,
-            [('Mean', 0, 0, 100, 1),
-             ('Variance', 0, 0, 100, 1)]
+            [('Mean(F)', 0, 0, 100, 1),
+             ('Variance(F)', 0, 0, 100, 1)]
         ))
         self.actions_dict['gaussian_noise_action'] = self.gaussian_noise_action
         self.poisson_noise_action = QAction('&Poisson Noise', self)
@@ -450,8 +450,8 @@ class MainWindow(QMainWindow):
             'Speckle Noise',
             Functions.speckle_noise,
             manipulated_image,
-            [('Mean', 0, 0, 100, 1),
-             ('Variance', 0, 0, 100, 1)]
+            [('Mean(F)', 0, 0, 100, 1),
+             ('Variance(F)', 0, 0, 100, 1)]
         ))
         self.actions_dict['speckle_noise_action'] = self.speckle_noise_action
 
@@ -470,7 +470,7 @@ class MainWindow(QMainWindow):
     def _createMenuBar(self):
         menu_bar = self.menuBar()
 
-        logo_menu = menu_bar.addMenu(QIcon('resources/PixoLogo.png'), '&Pixo')
+        logo_menu = menu_bar.addMenu(QIcon('../resources/PixoLogo.png'), '&Pixo')
         logo_menu.addActions((self.minimize_action,
                               self.close_action))
 
@@ -698,8 +698,8 @@ def canny_edge_detection_action():
         'Canny Edge Detection',
         Functions.canny_edge_detect,
         manipulated_image,
-        [('Threshold 1', 0, 0, 255, 1),
-         ('Threshold 2', 0, 0, 255, 1)]
+        [('Threshold 1', 0, 0, 1000, 1),
+         ('Threshold 2', 0, 0, 1000, 1)]
     )
     main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
