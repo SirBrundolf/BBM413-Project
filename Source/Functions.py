@@ -26,7 +26,7 @@ def box_blur(image, args):
 
 def gaussian_blur(image, args):
     kernel_size = (args[0], args[1])
-    sigma_x = args[2]
+    sigma_x = args[2] / 10  # TODO Normalize from [0, 100] to [0, 10]
     manipulated_image = cv2.GaussianBlur(image, kernel_size, sigma_x, 0)
     return manipulated_image
 
@@ -70,13 +70,13 @@ def flip_image(image, args):  # Axis 0 = X, Axis 1 = Y
     return manipulated_image
 
 
-def mirror_image(image, args):  # Axis 0 = X, Axis 1 = Y
+def mirror_image(image, args):
     axis_x, axis_y = args
     manipulated_image = np.copy(image)
-    if axis_x == 1:
+    if axis_x:
         flipped_image = cv2.flip(manipulated_image, 0)
         manipulated_image = np.vstack((manipulated_image, flipped_image))
-    if axis_y == 1:
+    if axis_y:
         flipped_image = cv2.flip(manipulated_image, 1)
         manipulated_image = np.hstack((manipulated_image, flipped_image))
     return manipulated_image
@@ -114,6 +114,7 @@ def change_color_balance(image, args):
 
 def change_contrast_and_brightness(image, args):
     alpha, beta, gamma = args
+    alpha, gamma = alpha / 10, gamma / 10  # TODO Normalize Alpha and Gamma from [0, 100] to [0, 10]
     look_up_table1 = np.empty((1, 256), np.uint8)
     look_up_table2 = np.empty((1, 256), np.uint8)
     for i in range(256):
@@ -133,7 +134,7 @@ def salt_and_pepper_noise(image, args):
 
 def gaussian_noise(image, args):
     mean, var = args
-    mean, var = mean / 100, var / 100
+    mean, var = mean / 10, var / 10  # TODO Normalize Mean and Var from [0, 100] to [0, 10]
     noise_image = skimage.util.random_noise(image=image, mode='gaussian', mean=mean, var=var)
     manipulated_image = np.array(255 * noise_image, dtype='uint8')
     return manipulated_image
@@ -147,7 +148,7 @@ def poisson_noise(image):
 
 def speckle_noise(image, args):
     mean, var = args
-    mean, var = mean / 100, var / 100
+    mean, var = mean / 10, var / 10  # TODO Normalize Mean and Var from [0, 100] to [0, 10]
     noise_image = skimage.util.random_noise(image=image, mode='speckle', mean=mean, var=var)
     manipulated_image = np.array(255 * noise_image, dtype='uint8')
     return manipulated_image
