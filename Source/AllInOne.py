@@ -708,19 +708,12 @@ def redo_action():
 
     if image_history_index < len(image_history) - 1:
         image_history_index += 1
-        print('1')
         manipulated_image = image_history[image_history_index]
-        print('2')
         main_window.drawManipulatedImage(manipulated_image)
-        print('3')
         if isGrayscale(manipulated_image):
-            print('4')
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
-            print('5')
         else:
-            print('6')
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [True, True])
-            print('7')
 
 
 def save_file_action():
