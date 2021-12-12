@@ -14,6 +14,9 @@ import Functions
 loaded_image = np.empty(0)
 manipulated_image = np.empty(0)
 preview_image = np.empty(0)
+image_history = []
+image_history_index = -1
+
 main_window = None
 
 save_location = None
@@ -21,6 +24,16 @@ save_location = None
 SCREEN_MULTIPLIER = 0.45
 IMAGE_WIDTH, IMAGE_HEIGHT = 800, 800
 MENU_BAR_HEIGHT = 36
+
+
+class CheckBox(QCheckBox):
+    def __init__(self, init_val, parent=None):
+        super().__init__(parent)
+        self.init_val = init_val
+        self.stateChanged.connect(lambda: self.valueChange())
+
+    def valueChange(self):
+        self.parent().drawPreviewImage()
 
 
 class SpinBox(QSpinBox):
@@ -32,13 +45,10 @@ class SpinBox(QSpinBox):
 
     def valueChange(self):
         if self.parent().slider is not None:
-            a, b = self.value() % self.singleStep(), self.init_val % self.singleStep()
-            if a != b:
-                if a == 0:
-                    a = self.singleStep()
-                self.blockSignals(True)
-                self.setValue(self.value() - (a - b))
-                self.blockSignals(False)
+            a = (self.value() - self.init_val) % self.singleStep()
+            self.blockSignals(True)
+            self.setValue(self.value() - a)
+            self.blockSignals(False)
             self.parent().slider.blockSignals(True)
             self.parent().slider.setValue(self.value())
             self.parent().slider.blockSignals(False)
@@ -55,13 +65,10 @@ class Slider(QSlider):
 
     def valueChange(self):
         if self.parent().spin_box is not None:
-            a, b = self.value() % self.singleStep(), self.init_val % self.singleStep()
-            if a != b:
-                if a == 0:
-                    a = self.singleStep()
-                self.blockSignals(True)
-                self.setValue(self.value() - (a - b))
-                self.blockSignals(False)
+            a = (self.value() - self.init_val) % self.singleStep()
+            self.blockSignals(True)
+            self.setValue(self.value() - a)
+            self.blockSignals(False)
             self.parent().spin_box.blockSignals(True)
             self.parent().spin_box.setValue(self.value())
             self.parent().spin_box.blockSignals(False)
@@ -69,12 +76,14 @@ class Slider(QSlider):
             self.parent().drawPreviewImage()
 
 
-class TextSpinBoxAndSlider(QLabel):
+class Field(QLabel):
     def __init__(self, field_name, init_val, min_val, max_val, step_size, parent=None):
         super().__init__(parent)
         self.text = None
         self.spin_box = None
         self.slider = None
+        self.check_box = None
+        self.value_look_up = None
         self.init_val = init_val
         self.min_val = min_val
         self.max_val = max_val
@@ -84,34 +93,49 @@ class TextSpinBoxAndSlider(QLabel):
         self.text.setText('{}:'.format(field_name))
         self.text.setAccessibleName('text_field')
 
-        self.spin_box = SpinBox(self.init_val, self)
-
-        self.slider = Slider(self.init_val, Qt.Horizontal, self)
-
+        if self.min_val == 0 and self.max_val == 1:
+            self.check_box = CheckBox(self.init_val, self)
+            self.value_look_up = self.check_box
+        else:
+            self.spin_box = SpinBox(self.init_val, self)
+            self.slider = Slider(self.init_val, Qt.Horizontal, self)
+            self.value_look_up = self.spin_box
         self.setInitialValuesAndRange()
 
     def setInitialValuesAndRange(self):
-        self.spin_box.blockSignals(True)
-        self.spin_box.setRange(self.min_val, self.max_val)
-        self.spin_box.setValue(self.init_val)
-        self.spin_box.blockSignals(False)
+        if self.min_val == 0 and self.max_val == 1:
+            self.check_box.setChecked(self.init_val)
+        else:
+            self.spin_box.blockSignals(True)
+            self.spin_box.setRange(self.min_val, self.max_val)
+            self.spin_box.setValue(self.init_val)
+            self.spin_box.blockSignals(False)
 
-        self.spin_box.setSingleStep(self.step_size)
-        self.spin_box.setKeyboardTracking(False)
+            self.spin_box.setSingleStep(self.step_size)
+            self.spin_box.setKeyboardTracking(False)
 
-        self.slider.blockSignals(True)
-        self.slider.setRange(self.min_val, self.max_val)
-        self.slider.setValue(self.init_val)
-        self.slider.blockSignals(False)
+            self.slider.blockSignals(True)
+            self.slider.setRange(self.min_val, self.max_val)
+            self.slider.setValue(self.init_val)
+            self.slider.blockSignals(False)
 
-        self.slider.setTickInterval(self.step_size)
-        self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.setSingleStep(self.step_size)
+            self.slider.setTickInterval(self.step_size)
+            self.slider.setTickPosition(QSlider.TicksBelow)
+            self.slider.setSingleStep(self.step_size)
 
-    def drawTextSpinBoxAndSlider(self):
+    def returnLookUpValue(self):
+        if self.min_val == 0 and self.max_val == 1:
+            return self.value_look_up.isChecked()
+        else:
+            return self.value_look_up.value()
+
+    def drawElements(self):
         self.text.setGeometry(0, 0, self.width() // 2, self.height() // 2)
-        self.spin_box.setGeometry(self.width() // 2, 0, self.width() // 2, self.height() // 2)
-        self.slider.setGeometry(0, self.height() // 2, self.width(), self.height() // 2)
+        if self.min_val == 0 and self.max_val == 1:
+            self.check_box.setGeometry(self.width() - self.check_box.width(), 0, self.width() // 2, self.height() // 2)
+        else:
+            self.spin_box.setGeometry(self.width() // 2, 0, self.width() // 2, self.height() // 2)
+            self.slider.setGeometry(0, self.height() // 2, self.width(), self.height() // 2)
 
     def updateAll(self, value):
         self.spin_box.setValue(self.init_val)
@@ -195,10 +219,10 @@ class AnotherWindow(QWidget):
 
         for field_ind, field in enumerate(basic_fields):
             field_name, init_val, min_val, max_val, step_size = field
-            new_field = TextSpinBoxAndSlider(field_name, init_val, min_val, max_val, step_size, self)
+            new_field = Field(field_name, init_val, min_val, max_val, step_size, self)
             self.basic_fields.append(new_field)
             new_field.setGeometry(11 * self.width() // 20, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * field_ind, 17 * self.width() // 40, IMAGE_WIDTH // 10)
-            new_field.drawTextSpinBoxAndSlider()
+            new_field.drawElements()
 
         if len(advanced_fields) > 0:
             self.enable_advanced_option = QCheckBox('Enable Advanced Options', self)
@@ -208,20 +232,16 @@ class AnotherWindow(QWidget):
         for field_ind in range(len(advanced_fields)):
             field = advanced_fields[field_ind]
             field_name, init_val, min_val, max_val, step_size = field
-            new_field = TextSpinBoxAndSlider(field_name, init_val, min_val, max_val, step_size, self)
+            new_field = Field(field_name, init_val, min_val, max_val, step_size, self)
             self.advanced_fields.append(new_field)
             new_field.setGeometry(11 * self.width() // 20, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * (field_ind + len(basic_fields)) + 3 * IMAGE_WIDTH // 40, 17 * self.width() // 40,
                                   IMAGE_WIDTH // 10)
-            new_field.drawTextSpinBoxAndSlider()
+            new_field.drawElements()
             new_field.updateAll(False)
 
         self.apply_button = QPushButton('Apply', self)
         self.apply_button.setGeometry(self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
         self.apply_button.pressed.connect(lambda: self.pressedOK())
-
-        self.reset_button = QPushButton('Reset', self)
-        self.reset_button.setGeometry(3 * self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
-        self.reset_button.pressed.connect(lambda: self.pressedReset())
 
         self.cancel_Button = QPushButton('Cancel', self)
         self.cancel_Button.setGeometry(5 * self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
@@ -234,26 +254,23 @@ class AnotherWindow(QWidget):
 
         args = []
         for basic_field in self.basic_fields:
-            args.append(basic_field.spin_box.value())
+            args.append(basic_field.returnLookUpValue())
         for advanced_field in self.advanced_fields:
-            args.append(advanced_field.spin_box.value())
+            args.append(advanced_field.returnLookUpValue())
         new_image_data = self.function(manipulated_image, args)
         preview_image = new_image_data
         self.preview.changePreviewImage(new_image_data)
 
     def pressedOK(self):
-        global manipulated_image
+        global manipulated_image, image_history, image_history_index
 
         manipulated_image = preview_image
         main_window.drawManipulatedImage(manipulated_image)
         main_window.updateAllActions(True)
+        image_history_index += 1
+        image_history.insert(image_history_index, manipulated_image)
+        image_history = image_history[:image_history_index + 1]
         self.close()
-
-    def pressedReset(self):
-        for field in self.basic_fields:
-            field.updateAll(1)
-        for field in self.advanced_fields:
-            field.updateAll(self.enable_advanced_option.isChecked())
 
     def pressedCancel(self):
         main_window.updateAllActions(True)
@@ -311,10 +328,6 @@ class MainWindow(QMainWindow):
         self.open_action.triggered.connect(open_file_action)
         self.actions_dict['open_action'] = self.open_action
         self.nonImageActions_dict['open_action'] = self.open_action
-        self.reset_action = QAction('&Reset', self)
-        self.reset_action.setShortcut('Ctrl+R')
-        self.reset_action.triggered.connect(reset_image_action)
-        self.actions_dict['reset_action'] = self.reset_action
         self.save_action = QAction('&Save', self)
         self.save_action.setShortcut('Ctrl+S')
         self.save_action.triggered.connect(save_file_action)
@@ -323,6 +336,18 @@ class MainWindow(QMainWindow):
         self.save_as_action.setShortcut('Shift+Ctrl+S')
         self.save_as_action.triggered.connect(save_as_file_action)
         self.actions_dict['save_as_action'] = self.save_as_action
+        self.reset_action = QAction('&Reset', self)
+        self.reset_action.setShortcut('Ctrl+R')
+        self.reset_action.triggered.connect(reset_image_action)
+        self.actions_dict['reset_action'] = self.reset_action
+        self.undo_action = QAction('&Undo', self)
+        self.undo_action.setShortcut('Ctrl+Z')
+        self.undo_action.triggered.connect(undo_action)
+        self.actions_dict['undo_action'] = self.undo_action
+        self.redo_action = QAction('R&edo', self)
+        self.redo_action.setShortcut('Ctrl+Y')
+        self.redo_action.triggered.connect(redo_action)
+        self.actions_dict['redo_action'] = self.redo_action
         self.exit_action = QAction('&Exit', self)
         self.exit_action.setShortcut('Ctrl+Q')
         self.exit_action.triggered.connect(lambda: sys.exit())
@@ -344,7 +369,7 @@ class MainWindow(QMainWindow):
             manipulated_image,
             [('Kernel Size X', 1, 1, 49, 2),
              ('Kernel Size Y', 1, 1, 49, 2)],
-            [('Variance(F)', 0, 0, 100, 1)]
+            [('Std Deviation', 0, 0, 100, 1)]
         ))
         self.actions_dict['gaussian_blur_action'] = self.gaussian_blur_action
         self.median_blur_action = QAction('&Median Blur...', self)
@@ -384,8 +409,8 @@ class MainWindow(QMainWindow):
             'Flip',
             Functions.flip_image,
             manipulated_image,
-            [('Flip Horizontal(B)', 0, 0, 1, 1),
-             ('Flip Vertical(B)', 0, 0, 1, 1)]
+            [('Flip Horizontal', False, 0, 1, 1),
+             ('Flip Vertical', False, 0, 1, 1)]
         ))
         self.actions_dict['flip_action'] = self.flip_action
         self.mirror_action = QAction('&Mirror...', self)
@@ -393,8 +418,8 @@ class MainWindow(QMainWindow):
             'Mirror',
             Functions.mirror_image,
             manipulated_image,
-            [('Mirror Horizontal(B)', 0, 0, 1, 1),
-             ('Mirror Vertical(B)', 0, 0, 1, 1)]
+            [('Mirror Horizontal', False, 0, 1, 1),
+             ('Mirror Vertical', False, 0, 1, 1)]
         ))
         self.actions_dict['mirror_action'] = self.mirror_action
         self.rotate_action = QAction('&Rotate...', self)
@@ -428,9 +453,9 @@ class MainWindow(QMainWindow):
             'Change Contrast and Brightness',
             Functions.change_contrast_and_brightness,
             manipulated_image,
-            [('Alpha(F)', 1, 0, 2, 1),
+            [('Alpha', 1, 0, 100, 1),
              ('Beta', 0, -255, 255, 1)],
-            [('Gamma(F)', 1, 0, 2, 1)]
+            [('Gamma', 1, 0, 100, 1)]
         ))
         self.actions_dict['color_brightness_action'] = self.color_brightness_action
 
@@ -448,8 +473,8 @@ class MainWindow(QMainWindow):
             'Gaussian Noise',
             Functions.gaussian_noise,
             manipulated_image,
-            [('Mean(F)', 0, 0, 100, 1),
-             ('Variance(F)', 0, 0, 100, 1)]
+            [('Mean', 0, 0, 100, 1),
+             ('Variance', 0, 0, 100, 1)]
         ))
         self.actions_dict['gaussian_noise_action'] = self.gaussian_noise_action
         self.poisson_noise_action = QAction('&Poisson Noise', self)
@@ -460,8 +485,8 @@ class MainWindow(QMainWindow):
             'Speckle Noise',
             Functions.speckle_noise,
             manipulated_image,
-            [('Mean(F)', 0, 0, 100, 1),
-             ('Variance(F)', 0, 0, 100, 1)]
+            [('Mean', 0, 0, 100, 1),
+             ('Variance', 0, 0, 100, 1)]
         ))
         self.actions_dict['speckle_noise_action'] = self.speckle_noise_action
 
@@ -475,6 +500,15 @@ class MainWindow(QMainWindow):
         self.canny_edge_detect_action.triggered.connect(lambda: canny_edge_detection_action())
         self.actions_dict['canny_edge_detect_action'] = self.canny_edge_detect_action
 
+        self.help_action = QAction('&Help...', self)
+        # self.help_action.triggered.connect()
+        self.actions_dict['help_action'] = self.help_action
+        self.nonImageActions_dict['help_action'] = self.help_action
+        self.about_action = QAction('&About [INSERT NAME HERE]...', self)
+        # self.about_action.triggered.connect()
+        self.actions_dict['about_action'] = self.about_action
+        self.nonImageActions_dict['about_action'] = self.about_action
+
         self.updateAllImageActions(False)
 
     def _createMenuBar(self):
@@ -486,9 +520,13 @@ class MainWindow(QMainWindow):
 
         file_menu = menu_bar.addMenu('&File')
         file_menu.addActions((self.open_action,
-                              self.reset_action,
                               self.save_action,
                               self.save_as_action,
+                              file_menu.addSeparator(),
+                              self.reset_action,
+                              self.undo_action,
+                              self.redo_action,
+                              file_menu.addSeparator(),
                               self.exit_action))
 
         edit_menu = menu_bar.addMenu('&Edit')
@@ -499,6 +537,7 @@ class MainWindow(QMainWindow):
                               self.median_blur_action,
                               self.bilateral_blur_action,
                               self.remove_blur_action))
+        edit_menu.addSeparator()
 
         orientation_menu = edit_menu.addMenu('&Orientation')
         orientation_menu.addActions((self.crop_action,
@@ -506,22 +545,30 @@ class MainWindow(QMainWindow):
                                      self.mirror_action,
                                      self.rotate_action,
                                      self.reverse_action))
+        edit_menu.addSeparator()
 
         color_menu = edit_menu.addMenu('&Color')
         color_menu.addActions((self.grayscale_action,
                                self.color_balance_action,
                                self.color_brightness_action))
+        edit_menu.addSeparator()
 
         noise_menu = edit_menu.addMenu('&Noise')
         noise_menu.addActions((self.salt_and_pepper_noise_action,
                                self.gaussian_noise_action,
                                self.poisson_noise_action,
                                self.speckle_noise_action))
+        edit_menu.addSeparator()
 
         detect_edge_menu = edit_menu.addMenu('&Edge Detection')
         detect_edge_menu.addActions((self.naive_edge_detect_action,
                                      self.sobel_edge_detect_action,
                                      self.canny_edge_detect_action))
+
+        help_menu = menu_bar.addMenu('&Help')
+        help_menu.addActions((self.help_action,
+                              file_menu.addSeparator(),
+                              self.about_action))
 
     def updateAllActions(self, value):
         for key, val in self.actions_dict.items():
@@ -599,41 +646,77 @@ class MainWindow(QMainWindow):
             event.ignore()
 
     def dropEvent(self, event):
-        global loaded_image, manipulated_image
-
         file_name, file_extension = os.path.splitext(event.mimeData().urls()[0].toLocalFile())
         if file_extension in ('.png', '.jpg', '.jpeg'):
             event.setDropAction(Qt.CopyAction)
             file_path = event.mimeData().urls()[0].toLocalFile()
-            loaded_image = cv2.imread(file_path)
-            manipulated_image = np.copy(loaded_image)
-            main_window.updateAllImageActions(True)
-            main_window.drawLoadedImage(loaded_image)
-            main_window.drawManipulatedImage(manipulated_image)
+            open_file(file_path)
             event.accept()
         else:
             event.ignore()
 
 
 def open_file_action():
-    global loaded_image, manipulated_image
-
     name = QFileDialog.getOpenFileName(caption='Open', filter='Image Files (*.png *.jpg *.jpeg)')
     if name[0] != '':
-        loaded_image = cv2.imread(name[0])
-        manipulated_image = np.copy(loaded_image)
-        main_window.updateAllImageActions(True)
-        main_window.drawLoadedImage(loaded_image)
-        main_window.drawManipulatedImage(manipulated_image)
-        main_window.start_text.setVisible(False)
+        open_file(name[0])
+
+
+def open_file(path):
+    global main_window, loaded_image, manipulated_image, image_history, image_history_index
+
+    loaded_image = cv2.imread(path)
+    manipulated_image = np.copy(loaded_image)
+    main_window.updateAllImageActions(True)
+    main_window.drawLoadedImage(loaded_image)
+    main_window.drawManipulatedImage(manipulated_image)
+    image_history = [manipulated_image]
+    image_history_index = 0
+    main_window.start_text.setVisible(False)
+
+    for i in range(len(loaded_image)):
+        for j in range(len(loaded_image[i])):
+            if loaded_image[i][j][0] != loaded_image[i][j][1] or loaded_image[i][j][0] != loaded_image[i][j][2] or loaded_image[i][j][1] != loaded_image[i][j][2]:
+                return
+    main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
 
 def reset_image_action():
-    global loaded_image, manipulated_image
+    global loaded_image, manipulated_image, image_history, image_history_index
 
-    manipulated_image = loaded_image
-    main_window.drawManipulatedImage(manipulated_image)
-    main_window.updateAllActions(True)
+    if not np.array_equal(loaded_image, manipulated_image):
+        manipulated_image = loaded_image
+        main_window.drawManipulatedImage(manipulated_image)
+        main_window.updateAllActions(True)
+        image_history_index += 1
+        image_history.insert(image_history_index, manipulated_image)
+        image_history = image_history[:image_history_index + 1]
+
+
+def undo_action():
+    global image_history, image_history_index, manipulated_image
+
+    if image_history_index > 0:
+        image_history_index -= 1
+        manipulated_image = image_history[image_history_index]
+        main_window.drawManipulatedImage(manipulated_image)
+        if len(manipulated_image.shape) == 2:
+            main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+        else:
+            main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [True, True])
+
+
+def redo_action():
+    global image_history, image_history_index, manipulated_image
+
+    if image_history_index < len(image_history) - 1:
+        image_history_index += 1
+        manipulated_image = image_history[image_history_index]
+        main_window.drawManipulatedImage(manipulated_image)
+        if len(manipulated_image.shape) == 2:
+            main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+        else:
+            main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [True, True])
 
 
 def save_file_action():
@@ -669,26 +752,35 @@ def reverse_action():
 
 
 def grayscale_action():
-    global manipulated_image
+    global manipulated_image, image_history, image_history_index
 
     manipulated_image = Functions.grayscale_image(manipulated_image)
     main_window.drawManipulatedImage(manipulated_image)
     main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+    image_history_index += 1
+    image_history.insert(image_history_index, manipulated_image)
+    image_history = image_history[:image_history_index + 1]
 
 
 def poisson_noise_action():
-    global manipulated_image
+    global manipulated_image, image_history, image_history_index
 
     manipulated_image = Functions.poisson_noise(manipulated_image)
     main_window.drawManipulatedImage(manipulated_image)
+    image_history_index += 1
+    image_history.insert(image_history_index, manipulated_image)
+    image_history = image_history[:image_history_index + 1]
 
 
 def naive_edge_detection_action():
-    global manipulated_image
+    global manipulated_image, image_history, image_history_index
 
     manipulated_image = Functions.naive_edge_detect(manipulated_image)
     main_window.drawManipulatedImage(manipulated_image)
     main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+    image_history_index += 1
+    image_history.insert(image_history_index, manipulated_image)
+    image_history = image_history[:image_history_index + 1]
 
 
 def sobel_edge_detection_action():
@@ -697,8 +789,8 @@ def sobel_edge_detection_action():
         Functions.sobel_edge_detect,
         manipulated_image,
         [('Kernel Size', 1, 1, 7, 2)],
-        [('dX', 1, 1, 3, 1),
-         ('dY', 1, 1, 3, 1)]
+        [('dX', 1, 0, 2, 1),
+         ('dY', 1, 0, 2, 1)]
     )
     main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
@@ -731,7 +823,7 @@ if __name__ == '__main__':
     main_window.setWindowFlag(Qt.FramelessWindowHint)
     main_window.setFixedSize(2 * IMAGE_WIDTH, IMAGE_HEIGHT + MENU_BAR_HEIGHT)
     main_window.move((screen_width - 2 * IMAGE_WIDTH) // 2, (screen_height - IMAGE_HEIGHT) // 2)
-    main_window.setWindowTitle('Pixo: Image Editor')
+    main_window.setWindowTitle('[INSERT NAME HERE]')
 
     main_window.show()
     sys.exit(app.exec_())
