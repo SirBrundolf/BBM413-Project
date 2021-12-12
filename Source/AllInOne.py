@@ -453,9 +453,9 @@ class MainWindow(QMainWindow):
             'Change Contrast and Brightness',
             Functions.change_contrast_and_brightness,
             manipulated_image,
-            [('Alpha', 1, 0, 100, 1),
+            [('Alpha', 10, 0, 100, 1),
              ('Beta', 0, -255, 255, 1)],
-            [('Gamma', 1, 0, 100, 1)]
+            [('Gamma', 10, 0, 100, 1)]
         ))
         self.actions_dict['color_brightness_action'] = self.color_brightness_action
 
@@ -573,7 +573,7 @@ class MainWindow(QMainWindow):
     def updateAllActions(self, value):
         for key, val in self.actions_dict.items():
             val.setEnabled(value)
-        if len(manipulated_image.shape) < 3:
+        if isGrayscale(manipulated_image):
             self.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
     def updateAllImageActions(self, value):
@@ -674,11 +674,8 @@ def open_file(path):
     image_history_index = 0
     main_window.start_text.setVisible(False)
 
-    for i in range(len(loaded_image)):
-        for j in range(len(loaded_image[i])):
-            if loaded_image[i][j][0] != loaded_image[i][j][1] or loaded_image[i][j][0] != loaded_image[i][j][2] or loaded_image[i][j][1] != loaded_image[i][j][2]:
-                return
-    main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+    if isGrayscale(loaded_image):
+        main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
 
 def reset_image_action():
@@ -700,7 +697,7 @@ def undo_action():
         image_history_index -= 1
         manipulated_image = image_history[image_history_index]
         main_window.drawManipulatedImage(manipulated_image)
-        if len(manipulated_image.shape) == 2:
+        if isGrayscale(manipulated_image):
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
         else:
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [True, True])
@@ -711,12 +708,19 @@ def redo_action():
 
     if image_history_index < len(image_history) - 1:
         image_history_index += 1
+        print('1')
         manipulated_image = image_history[image_history_index]
+        print('2')
         main_window.drawManipulatedImage(manipulated_image)
-        if len(manipulated_image.shape) == 2:
+        print('3')
+        if isGrayscale(manipulated_image):
+            print('4')
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+            print('5')
         else:
+            print('6')
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [True, True])
+            print('7')
 
 
 def save_file_action():
@@ -808,6 +812,12 @@ def canny_edge_detection_action():
 
 def clamp(x, m, M):
     return max(min(x, M), m)
+
+
+def isGrayscale(image):
+    if len(image.shape) == 3 and (image[:, :, 0] == image[:, :, 1]).all() and (image[:, :, 0] == image[:, :, 2]).all():
+        return True
+    return False
 
 
 if __name__ == '__main__':
