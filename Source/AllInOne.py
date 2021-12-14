@@ -2,7 +2,7 @@ import sys
 import os
 
 from PyQt5 import QtGui
-from PyQt5.QtGui import QIcon, QCursor
+from PyQt5.QtGui import QIcon, QCursor, QPixmap
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog, QWidget, QLabel, QSlider, QSpinBox, QCheckBox, QPushButton
 import cv2.cv2 as cv2
@@ -83,7 +83,6 @@ class Field(QLabel):
         self.spin_box = None
         self.slider = None
         self.check_box = None
-        self.value_look_up = None
         self.init_val = init_val
         self.min_val = min_val
         self.max_val = max_val
@@ -95,11 +94,9 @@ class Field(QLabel):
 
         if self.min_val == 0 and self.max_val == 1:
             self.check_box = CheckBox(self.init_val, self)
-            self.value_look_up = self.check_box
         else:
             self.spin_box = SpinBox(self.init_val, self)
             self.slider = Slider(self.init_val, Qt.Horizontal, self)
-            self.value_look_up = self.spin_box
         self.setInitialValuesAndRange()
 
     def setInitialValuesAndRange(self):
@@ -123,11 +120,11 @@ class Field(QLabel):
             self.slider.setTickPosition(QSlider.TicksBelow)
             self.slider.setSingleStep(self.step_size)
 
-    def returnLookUpValue(self):
+    def getValue(self):
         if self.min_val == 0 and self.max_val == 1:
-            return self.value_look_up.isChecked()
+            return self.check_box.isChecked()
         else:
-            return self.value_look_up.value()
+            return self.spin_box.value()
 
     def drawElements(self):
         self.text.setGeometry(0, 0, self.width() // 2, self.height() // 2)
@@ -198,7 +195,7 @@ class MovablePreview(QLabel):
         self.setCursor(QCursor(Qt.OpenHandCursor))
 
 
-class AnotherWindow(QWidget):
+class NewWindow(QWidget):
     def __init__(self, title, function, image_data, basic_fields=None, advanced_fields=None):
         if basic_fields is None:
             basic_fields = []
@@ -254,9 +251,9 @@ class AnotherWindow(QWidget):
 
         args = []
         for basic_field in self.basic_fields:
-            args.append(basic_field.returnLookUpValue())
+            args.append(basic_field.getValue())
         for advanced_field in self.advanced_fields:
-            args.append(advanced_field.returnLookUpValue())
+            args.append(advanced_field.getValue())
         new_image_data = self.function(manipulated_image, args)
         preview_image = new_image_data
         self.preview.changePreviewImage(new_image_data)
@@ -284,6 +281,45 @@ class AnotherWindow(QWidget):
         self.pressedCancel()
 
 
+class AboutWindow(QLabel):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('About Pixo: Image Editor')
+        self.setFixedSize(IMAGE_WIDTH, IMAGE_HEIGHT)
+
+        self.pixo_logo = QPixmap('../resources/AboutPixoLogo.png')
+        self.pixo_logo = self.pixo_logo.scaledToWidth(9 * self.width() // 10, Qt.SmoothTransformation)
+
+        self.pixo_logo_label = QLabel(self)
+        self.pixo_logo_label.setPixmap(self.pixo_logo)
+        self.pixo_logo_label.move(self.width() // 20, self.height() // 20)
+
+        self.text1 = QLabel(self)
+        self.text1.setText('WAS MADE BY\n'
+                           'TUNA KARACAN 21827536\n'
+                           'EMİR KAAN KIRMACI 21827574\n'
+                           'FOR')
+        self.text1.setAccessibleName('about_text_field')
+        self.text1.setAlignment(Qt.AlignCenter)
+        self.text1.adjustSize()
+        self.text1.move((self.width() - self.text1.width()) // 2, self.pixo_logo.height() + self.height() // 10)
+
+        self.hacettepe_logo = QPixmap('../resources/HacettepeLogo.png')
+        self.hacettepe_logo = self.hacettepe_logo.scaledToWidth(9 * self.width() // 10, Qt.SmoothTransformation)
+
+        self.hacettepe_logo_label = QLabel(self)
+        self.hacettepe_logo_label.setPixmap(self.hacettepe_logo)
+        self.hacettepe_logo_label.move(self.width() // 20, self.pixo_logo.height() + self.text1.height() + 3 * self.height() // 20)
+
+        self.text2 = QLabel(self)
+        self.text2.setText('BBM415: IMAGE PROCESSING')
+        self.text2.setAccessibleName('about_text_field')
+        self.text2.setAlignment(Qt.AlignCenter)
+        self.text2.adjustSize()
+        self.text2.move((self.width() - self.text2.width()) // 2, self.pixo_logo.height() + self.text1.height() + self.hacettepe_logo.height() + self.height() // 5)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -296,7 +332,7 @@ class MainWindow(QMainWindow):
 
         self.start_text = QLabel(self)
         self.start_text.setGeometry(self.width() // 40, self.width() // 40 + MENU_BAR_HEIGHT, 2 * IMAGE_WIDTH - self.width() // 20, IMAGE_HEIGHT - self.width() // 20)
-        self.start_text.setText('Drag and Drop Images or File/Open... to Get Started!')
+        self.start_text.setText('Drag and Drop An Image or File/Open... to Get Started!')
         self.start_text.setAccessibleName('start_text')
         self.start_text.setAlignment(Qt.AlignCenter)
 
@@ -309,6 +345,7 @@ class MainWindow(QMainWindow):
         self.manipulated_image_frame.setAccessibleName('manipulated_image_frame')
 
         self.window = None
+        self.about_window = None
 
         self._createActions()
         self._createMenuBar()
@@ -319,7 +356,7 @@ class MainWindow(QMainWindow):
         self.actions_dict['minimize_action'] = self.minimize_action
         self.nonImageActions_dict['minimize_action'] = self.minimize_action
         self.close_action = QAction('&Close', self)
-        self.close_action.triggered.connect(lambda: sys.exit())
+        self.close_action.triggered.connect(lambda: exit_action())
         self.actions_dict['close_action'] = self.close_action
         self.nonImageActions_dict['close_action'] = self.close_action
 
@@ -350,7 +387,7 @@ class MainWindow(QMainWindow):
         self.actions_dict['redo_action'] = self.redo_action
         self.exit_action = QAction('&Exit', self)
         self.exit_action.setShortcut('Ctrl+Q')
-        self.exit_action.triggered.connect(lambda: sys.exit())
+        self.exit_action.triggered.connect(lambda: exit_action())
         self.actions_dict['exit_action'] = self.exit_action
         self.nonImageActions_dict['exit_action'] = self.exit_action
 
@@ -398,9 +435,9 @@ class MainWindow(QMainWindow):
             'Crop',
             Functions.crop_image,
             manipulated_image,
-            [('X1', 0, 0, manipulated_image.shape[1], 1),
+            [('X1', 0, 0, manipulated_image.shape[1] - 2, 1),
              ('X2', manipulated_image.shape[1], 2, manipulated_image.shape[1], 1),
-             ('Y1', 0, 0, manipulated_image.shape[0], 1),
+             ('Y1', 0, 0, manipulated_image.shape[0] - 2, 1),
              ('Y2', manipulated_image.shape[0], 2, manipulated_image.shape[0], 1)]
         ))
         self.actions_dict['crop_action'] = self.crop_action
@@ -500,12 +537,8 @@ class MainWindow(QMainWindow):
         self.canny_edge_detect_action.triggered.connect(lambda: canny_edge_detection_action())
         self.actions_dict['canny_edge_detect_action'] = self.canny_edge_detect_action
 
-        self.help_action = QAction('&Help...', self)
-        # self.help_action.triggered.connect()
-        self.actions_dict['help_action'] = self.help_action
-        self.nonImageActions_dict['help_action'] = self.help_action
-        self.about_action = QAction('&About [INSERT NAME HERE]...', self)
-        # self.about_action.triggered.connect()
+        self.about_action = QAction('&About Pixo: Image Editor...', self)
+        self.about_action.triggered.connect(lambda: self.createAboutWindow())
         self.actions_dict['about_action'] = self.about_action
         self.nonImageActions_dict['about_action'] = self.about_action
 
@@ -565,15 +598,14 @@ class MainWindow(QMainWindow):
                                      self.sobel_edge_detect_action,
                                      self.canny_edge_detect_action))
 
-        help_menu = menu_bar.addMenu('&Help')
-        help_menu.addActions((self.help_action,
-                              file_menu.addSeparator(),
-                              self.about_action))
+        about_menu = menu_bar.addMenu('&About')
+        about_menu.addAction(self.about_action)
 
     def updateAllActions(self, value):
         for key, val in self.actions_dict.items():
-            val.setEnabled(value)
-        if isGrayscale(manipulated_image):
+            if key not in ['minimize_action', 'exit_action', 'close_action', 'about_action']:
+                val.setEnabled(value)
+        if is_grayscale(manipulated_image):
             self.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
     def updateAllImageActions(self, value):
@@ -619,9 +651,13 @@ class MainWindow(QMainWindow):
             basic_fields = []
         if advanced_fields is None:
             advanced_fields = []
-        self.window = AnotherWindow(title, function, image_data, basic_fields, advanced_fields)
+        self.window = NewWindow(title, function, image_data, basic_fields, advanced_fields)
         self.window.show()
         self.updateAllActions(False)
+
+    def createAboutWindow(self):
+        self.about_window = AboutWindow()
+        self.about_window.show()
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPos()
@@ -655,6 +691,9 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()
 
+    def closeEvent(self, event):
+        exit_action()
+
 
 def open_file_action():
     name = QFileDialog.getOpenFileName(caption='Open', filter='Image Files (*.png *.jpg *.jpeg)')
@@ -674,7 +713,7 @@ def open_file(path):
     image_history_index = 0
     main_window.start_text.setVisible(False)
 
-    if isGrayscale(loaded_image):
+    if is_grayscale(loaded_image):
         main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
 
@@ -697,7 +736,7 @@ def undo_action():
         image_history_index -= 1
         manipulated_image = image_history[image_history_index]
         main_window.drawManipulatedImage(manipulated_image)
-        if isGrayscale(manipulated_image):
+        if is_grayscale(manipulated_image):
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
         else:
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [True, True])
@@ -710,7 +749,7 @@ def redo_action():
         image_history_index += 1
         manipulated_image = image_history[image_history_index]
         main_window.drawManipulatedImage(manipulated_image)
-        if isGrayscale(manipulated_image):
+        if is_grayscale(manipulated_image):
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
         else:
             main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [True, True])
@@ -732,6 +771,10 @@ def save_as_file_action():
     name = QFileDialog.getSaveFileName(caption='Save', filter='Image Files (*.png *.jpg *.jpeg)')
     if name[0] != '':
         cv2.imwrite(name[0], manipulated_image)
+
+
+def exit_action():
+    sys.exit()
 
 
 def remove_blur_action():
@@ -807,7 +850,7 @@ def clamp(x, m, M):
     return max(min(x, M), m)
 
 
-def isGrayscale(image):
+def is_grayscale(image):
     if len(image.shape) == 3 and (image[:, :, 0] == image[:, :, 1]).all() and (image[:, :, 0] == image[:, :, 2]).all():
         return True
     return False
@@ -826,7 +869,7 @@ if __name__ == '__main__':
     main_window.setWindowFlag(Qt.FramelessWindowHint)
     main_window.setFixedSize(2 * IMAGE_WIDTH, IMAGE_HEIGHT + MENU_BAR_HEIGHT)
     main_window.move((screen_width - 2 * IMAGE_WIDTH) // 2, (screen_height - IMAGE_HEIGHT) // 2)
-    main_window.setWindowTitle('[INSERT NAME HERE]')
+    main_window.setWindowTitle('Pixo: Image Editor')
 
     main_window.show()
     sys.exit(app.exec_())
