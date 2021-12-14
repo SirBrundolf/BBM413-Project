@@ -26,7 +26,7 @@ def box_blur(image, args):
 
 def gaussian_blur(image, args):
     kernel_size = (args[0], args[1])
-    sigma_x = args[2] / 10  # TODO Normalize from [0, 100] to [0, 10]
+    sigma_x = args[2] / 10
     manipulated_image = cv2.GaussianBlur(image, kernel_size, sigma_x, 0)
     return manipulated_image
 
@@ -114,7 +114,7 @@ def change_color_balance(image, args):
 
 def change_contrast_and_brightness(image, args):
     alpha, beta, gamma = args
-    alpha, gamma = alpha / 10, gamma / 10  # TODO Normalize Alpha and Gamma from [0, 100] to [0, 10]
+    alpha, gamma = alpha / 10, gamma / 10
     look_up_table1 = np.empty((1, 256), np.uint8)
     look_up_table2 = np.empty((1, 256), np.uint8)
     for i in range(256):
@@ -134,7 +134,7 @@ def salt_and_pepper_noise(image, args):
 
 def gaussian_noise(image, args):
     mean, var = args
-    mean, var = mean / 10, var / 10  # TODO Normalize Mean and Var from [0, 100] to [0, 10]
+    mean, var = mean / 10, var / 10
     noise_image = skimage.util.random_noise(image=image, mode='gaussian', mean=mean, var=var)
     manipulated_image = np.array(255 * noise_image, dtype='uint8')
     return manipulated_image
@@ -148,7 +148,7 @@ def poisson_noise(image):
 
 def speckle_noise(image, args):
     mean, var = args
-    mean, var = mean / 10, var / 10  # TODO Normalize Mean and Var from [0, 100] to [0, 10]
+    mean, var = mean / 10, var / 10
     noise_image = skimage.util.random_noise(image=image, mode='speckle', mean=mean, var=var)
     manipulated_image = np.array(255 * noise_image, dtype='uint8')
     return manipulated_image
@@ -163,6 +163,8 @@ def naive_edge_detect(image):
 
 def sobel_edge_detect(image, args):
     kernel_size, dx, dy = args
+    if dx == 0 and dy == 0:
+        return np.zeros(image.shape[:2]).astype('uint8')
     grayscaled_image = grayscale_image(image)
     manipulated_image = cv2.Sobel(grayscaled_image, ksize=kernel_size, dx=dx, dy=dy, ddepth=cv2.CV_8U)
     return manipulated_image
