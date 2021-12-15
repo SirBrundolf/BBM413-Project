@@ -288,7 +288,7 @@ class AboutWindow(QLabel):
         self.setWindowTitle('About Pixo: Image Editor')
         self.setFixedSize(IMAGE_WIDTH, IMAGE_HEIGHT)
 
-        self.pixo_logo = QPixmap('../resources/AboutPixoLogo.png')
+        self.pixo_logo = QPixmap('resources/AboutPixoLogo.png')
         self.pixo_logo = self.pixo_logo.scaledToWidth(9 * self.width() // 10, Qt.SmoothTransformation)
 
         self.pixo_logo_label = QLabel(self)
@@ -305,7 +305,7 @@ class AboutWindow(QLabel):
         self.text1.adjustSize()
         self.text1.move((self.width() - self.text1.width()) // 2, self.pixo_logo.height() + self.height() // 10)
 
-        self.hacettepe_logo = QPixmap('../resources/HacettepeLogo.png')
+        self.hacettepe_logo = QPixmap('resources/HacettepeLogo.png')
         self.hacettepe_logo = self.hacettepe_logo.scaledToWidth(9 * self.width() // 10, Qt.SmoothTransformation)
 
         self.hacettepe_logo_label = QLabel(self)
@@ -547,7 +547,7 @@ class MainWindow(QMainWindow):
     def _createMenuBar(self):
         menu_bar = self.menuBar()
 
-        logo_menu = menu_bar.addMenu(QIcon('../resources/PixoLogo.png'), '&Pixo')
+        logo_menu = menu_bar.addMenu(QIcon('resources/PixoLogo.png'), '&Pixo')
         logo_menu.addActions((self.minimize_action,
                               self.close_action))
 
@@ -857,8 +857,14 @@ def is_grayscale(image):
 
 
 if __name__ == '__main__':
+    import ctypes
+
+    app_id = 'some.string.so.windows.does.not.f.up'
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+
     app = QApplication(sys.argv)
     app.setStyleSheet(QSS.qss)
+    app.setWindowIcon(QIcon('resources/PixoLogo.ico'))
 
     screen_width = QApplication.primaryScreen().size().width()
     screen_height = QApplication.primaryScreen().size().height()
