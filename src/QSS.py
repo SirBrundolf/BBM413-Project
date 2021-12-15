@@ -33,22 +33,24 @@ QLabel[accessibleName='text_field']
     font-size: 20px;
     color: #f0f0f0;
 }
+QLabel[accessibleName='about_text_field']
+{
+    font-family: 'Montserrat', Arial;
+    font-size: 60px;
+    color: #f0f0f0;
+}
 QLabel[accessibleName='start_text']
 {
     font-family: 'Montserrat', Arial;
-    font-size: 40px;
+    font-size: 60px;
     color: #f0f0f0;
-    border: 4px dashed #f0f0f0;
+    border: 6px dashed #f0f0f0;
 }
 QLabel[accessibleName='loaded_image_frame'], QLabel[accessibleName='manipulated_image_frame']
 {
     background: transparent;
 }
-AnotherWindow
-{
-    background-color: #282828;
-}
-QMainWindow
+QMainWindow, NewWindow, AboutWindow
 {
     background-color: #282828;
 }
