@@ -134,11 +134,15 @@ class Field(QLabel):
             self.spin_box.setGeometry(self.width() // 2, 0, self.width() // 2, self.height() // 2)
             self.slider.setGeometry(0, self.height() // 2, self.width(), self.height() // 2)
 
-    def updateAll(self, value):
-        self.spin_box.setValue(self.init_val)
-        self.spin_box.setDisabled(not value)
-        self.slider.setValue(self.init_val)
-        self.slider.setDisabled(not value)
+    def resetAllValues(self, value):
+        if self.min_val == 0 and self.max_val == 1:
+            self.check_box.setChecked(self.init_val)
+            self.check_box.setDisabled(not value)
+        else:
+            self.spin_box.setValue(self.init_val)
+            self.spin_box.setDisabled(not value)
+            self.slider.setValue(self.init_val)
+            self.slider.setDisabled(not value)
 
     def drawPreviewImage(self):
         self.parent().drawPreviewImage()
@@ -234,18 +238,18 @@ class NewWindow(QWidget):
             new_field.setGeometry(11 * self.width() // 20, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * (field_ind + len(basic_fields)) + 3 * IMAGE_WIDTH // 40, 17 * self.width() // 40,
                                   IMAGE_WIDTH // 10)
             new_field.drawElements()
-            new_field.updateAll(False)
+            new_field.resetAllValues(False)
 
-        self.apply_button = QPushButton('Apply', self)
-        self.apply_button.setGeometry(self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
+        self.apply_button = QPushButton('&Apply', self)
+        self.apply_button.setGeometry(self.width() // 12, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 6, IMAGE_WIDTH // 20)
         self.apply_button.pressed.connect(lambda: self.pressedOK())
 
-        self.reset_button = QPushButton('Reset', self)
-        self.reset_button.setGeometry(3 * self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
+        self.reset_button = QPushButton('&Reset', self)
+        self.reset_button.setGeometry(5 * self.width() // 12, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 6, IMAGE_WIDTH // 20)
         self.reset_button.pressed.connect(lambda: self.pressedReset())
 
-        self.cancel_Button = QPushButton('Cancel', self)
-        self.cancel_Button.setGeometry(5 * self.width() // 8, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 4, IMAGE_WIDTH // 20)
+        self.cancel_Button = QPushButton('&Cancel', self)
+        self.cancel_Button.setGeometry(9 * self.width() // 12, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * length + IMAGE_WIDTH // 10 - self.height() // 10, self.width() // 6, IMAGE_WIDTH // 20)
         self.cancel_Button.pressed.connect(lambda: self.pressedCancel())
 
         self.drawPreviewImage()
@@ -275,9 +279,9 @@ class NewWindow(QWidget):
 
     def pressedReset(self):
         for field in self.basic_fields:
-            field.updateAll(1)
+            field.resetAllValues(True)
         for field in self.advanced_fields:
-            field.updateAll(self.enable_advanced_option.isChecked())
+            field.resetAllValues(self.enable_advanced_option.isChecked())
 
     def pressedCancel(self):
         main_window.updateAllActions(True)
@@ -285,7 +289,7 @@ class NewWindow(QWidget):
 
     def updateAll(self, value):
         for field in self.advanced_fields:
-            field.updateAll(value)
+            field.resetAllValues(value)
 
     def closeEvent(self, event):
         self.pressedCancel()
@@ -395,7 +399,7 @@ class MainWindow(QMainWindow):
         self.redo_action.setShortcut('Ctrl+Y')
         self.redo_action.triggered.connect(redo_action)
         self.actions_dict['redo_action'] = self.redo_action
-        self.exit_action = QAction('&Exit', self)
+        self.exit_action = QAction('E&xit', self)
         self.exit_action.setShortcut('Ctrl+Q')
         self.exit_action.triggered.connect(lambda: exit_action())
         self.actions_dict['exit_action'] = self.exit_action
@@ -479,14 +483,14 @@ class MainWindow(QMainWindow):
              ('Rotation Center Y', manipulated_image.shape[0] // 2, 0, manipulated_image.shape[0], 1)]
         ))
         self.actions_dict['rotate_action'] = self.rotate_action
-        self.reverse_action = QAction('&Negative', self)
+
+        self.reverse_action = QAction('Convert to &Negative', self)
         self.reverse_action.triggered.connect(lambda: reverse_action())
         self.actions_dict['reverse_action'] = self.reverse_action
-
-        self.grayscale_action = QAction('&Convert to Grayscale', self)
+        self.grayscale_action = QAction('Convert to &Grayscale', self)
         self.grayscale_action.triggered.connect(lambda: grayscale_action())
         self.actions_dict['grayscale_action'] = self.grayscale_action
-        self.color_balance_action = QAction('C&hange Color Balance...', self)
+        self.color_balance_action = QAction('Change Color &Balance...', self)
         self.color_balance_action.triggered.connect(lambda: main_window.createNewWindow(
             'Change Color Balance',
             Functions.change_color_balance,
@@ -495,7 +499,7 @@ class MainWindow(QMainWindow):
              ('Amount', 0, -255, 255, 1)]
         ))
         self.actions_dict['color_balance_action'] = self.color_balance_action
-        self.color_brightness_action = QAction('Ch&ange Contrast and Brightness...', self)
+        self.color_brightness_action = QAction('Change &Contrast and Brightness...', self)
         self.color_brightness_action.triggered.connect(lambda: main_window.createNewWindow(
             'Change Contrast and Brightness',
             Functions.change_contrast_and_brightness,
@@ -527,7 +531,7 @@ class MainWindow(QMainWindow):
         self.poisson_noise_action = QAction('&Poisson Noise', self)
         self.poisson_noise_action.triggered.connect(lambda: poisson_noise_action())
         self.actions_dict['poisson_noise_action'] = self.poisson_noise_action
-        self.speckle_noise_action = QAction('S&peckle Noise...', self)
+        self.speckle_noise_action = QAction('Sp&eckle Noise...', self)
         self.speckle_noise_action.triggered.connect(lambda: self.createNewWindow(
             'Speckle Noise',
             Functions.speckle_noise,
@@ -586,12 +590,12 @@ class MainWindow(QMainWindow):
         orientation_menu.addActions((self.crop_action,
                                      self.flip_action,
                                      self.mirror_action,
-                                     self.rotate_action,
-                                     self.reverse_action))
+                                     self.rotate_action))
         edit_menu.addSeparator()
 
         color_menu = edit_menu.addMenu('&Color')
-        color_menu.addActions((self.grayscale_action,
+        color_menu.addActions((self.reverse_action,
+                               self.grayscale_action,
                                self.color_balance_action,
                                self.color_brightness_action))
         edit_menu.addSeparator()
@@ -851,7 +855,8 @@ def canny_edge_detection_action():
         Functions.canny_edge_detect,
         manipulated_image,
         [('Threshold 1', 0, 0, 1000, 1),
-         ('Threshold 2', 0, 0, 1000, 1)]
+         ('Threshold 2', 0, 0, 1000, 1)],
+        [('Use More Accurate L2 Formula', 0, 0, 1, 1)]
     )
     main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
 
