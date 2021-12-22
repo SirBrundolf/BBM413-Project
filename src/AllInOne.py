@@ -658,7 +658,7 @@ class MainWindow(QMainWindow):
         self.manipulated_image_frame.setGeometry(IMAGE_WIDTH, MENU_BAR_HEIGHT, IMAGE_WIDTH, height)
 
     def updateMainWindowHeight(self):
-        self.setFixedSize(2 * IMAGE_WIDTH, max(self.loaded_image_frame.height(), self.manipulated_image_frame.height()))
+        self.setFixedSize(2 * IMAGE_WIDTH, max(self.loaded_image_frame.height(), self.manipulated_image_frame.height()) + MENU_BAR_HEIGHT)
 
     def createNewWindow(self, title, function, image_data, basic_fields=None, advanced_fields=None):
         if basic_fields is None:
@@ -718,7 +718,7 @@ def open_file_action():
 def open_file(path):
     global main_window, loaded_image, manipulated_image, image_history, image_history_index
 
-    loaded_image = cv2.imread(path)
+    loaded_image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
     manipulated_image = np.copy(loaded_image)
     main_window.updateAllImageActions(True)
     main_window.drawLoadedImage(loaded_image)
