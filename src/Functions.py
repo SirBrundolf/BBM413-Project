@@ -95,7 +95,9 @@ def reverse_image(image):
 
 
 def grayscale_image(image):
-    manipulated_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    manipulated_image = np.copy(image)
+    if len(image.shape) > 2:
+        manipulated_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return manipulated_image
 
 
@@ -169,7 +171,7 @@ def sobel_edge_detect(image, args):
 
 
 def canny_edge_detect(image, args):
-    t1, t2, l2 = args
+    t1, t2 = args
     grayscaled_image = grayscale_image(image)
-    manipulated_image = cv2.Canny(grayscaled_image, t1, t2, L2gradient=l2)
+    manipulated_image = cv2.Canny(grayscaled_image, t1, t2)
     return manipulated_image
