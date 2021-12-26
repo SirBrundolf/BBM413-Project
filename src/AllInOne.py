@@ -230,8 +230,7 @@ class NewWindow(QWidget):
             self.enable_advanced_option.setGeometry(11 * self.width() // 20, self.height() // 40 + 3 * IMAGE_WIDTH // 20 * len(basic_fields), 17 * self.width() // 40, IMAGE_WIDTH // 40)
             self.enable_advanced_option.stateChanged.connect(lambda: self.updateAll(self.enable_advanced_option.isChecked()))
 
-        for field_ind in range(len(advanced_fields)):
-            field = advanced_fields[field_ind]
+        for field_ind, field in enumerate(advanced_fields):
             field_name, init_val, min_val, max_val, step_size = field
             new_field = Field(field_name, init_val, min_val, max_val, step_size, self)
             self.advanced_fields.append(new_field)
@@ -484,9 +483,9 @@ class MainWindow(QMainWindow):
         ))
         self.actions_dict['rotate_action'] = self.rotate_action
 
-        self.reverse_action = QAction('Convert to &Negative', self)
-        self.reverse_action.triggered.connect(lambda: reverse_action())
-        self.actions_dict['reverse_action'] = self.reverse_action
+        self.negative_action = QAction('Convert to &Negative', self)
+        self.negative_action.triggered.connect(lambda: reverse_action())
+        self.actions_dict['reverse_action'] = self.negative_action
         self.grayscale_action = QAction('Convert to &Grayscale', self)
         self.grayscale_action.triggered.connect(lambda: grayscale_action())
         self.actions_dict['grayscale_action'] = self.grayscale_action
@@ -594,7 +593,7 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
 
         color_menu = edit_menu.addMenu('&Color')
-        color_menu.addActions((self.reverse_action,
+        color_menu.addActions((self.negative_action,
                                self.grayscale_action,
                                self.color_balance_action,
                                self.color_brightness_action))
@@ -778,13 +777,17 @@ def save_file_action():
         name = QFileDialog.getSaveFileName(caption='Save', filter='Image Files (*.png *.jpg *.jpeg)')
         if name[0] != '':
             save_location = name[0]
-            cv2.imwrite(name[0], manipulated_image)
+            is_success, im_buf_arr = cv2.imencode('.jpg', manipulated_image)
+            im_buf_arr.tofile(name[0])
+            # cv2.imwrite(name[0], manipulated_image)
 
 
 def save_as_file_action():
-    name = QFileDialog.getSaveFileName(caption='Save', filter='Image Files (*.png *.jpg *.jpeg)')
+    name = QFileDialog.getSaveFileName(caption='Save As', filter='Image Files (*.png *.jpg *.jpeg)')
     if name[0] != '':
-        cv2.imwrite(name[0], manipulated_image)
+        is_success, im_buf_arr = cv2.imencode('.jpg', manipulated_image)
+        im_buf_arr.tofile(name[0])
+        # cv2.imwrite(name[0], manipulated_image)
 
 
 def exit_action():
@@ -792,17 +795,23 @@ def exit_action():
 
 
 def remove_blur_action():
-    global manipulated_image
-
+    global manipulated_image, image_history, image_history_index
     manipulated_image = Functions.de_blur(manipulated_image)
     main_window.drawManipulatedImage(manipulated_image)
+    main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+    image_history_index += 1
+    image_history.insert(image_history_index, manipulated_image)
+    image_history = image_history[:image_history_index + 1]
 
 
 def reverse_action():
-    global manipulated_image
-
+    global manipulated_image, image_history, image_history_index
     manipulated_image = Functions.reverse_image(manipulated_image)
     main_window.drawManipulatedImage(manipulated_image)
+    main_window.updateActionAbility(['grayscale_action', 'color_balance_action'], [False, False])
+    image_history_index += 1
+    image_history.insert(image_history_index, manipulated_image)
+    image_history = image_history[:image_history_index + 1]
 
 
 def grayscale_action():
@@ -875,7 +884,7 @@ if __name__ == '__main__':
     import ctypes
 
     app_id = 'some.string.so.windows.does.not.f.up'
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)  # Tell Windows that this is a unique app that should use its own icon.
 
     app = QApplication(sys.argv)
     app.setStyleSheet(QSS.qss)
